@@ -24,7 +24,7 @@ func createlist(router *gin.Engine) *httptest.ResponseRecorder {
 
 func createtodo(router *gin.Engine, ls models.Lists) *httptest.ResponseRecorder {
 	v := httptest.NewRecorder()
-	newTodo := models.Todos{Name: "NewTodo", Notes: "New Notes", ListID: ls.ID}
+	newTodo := models.Todos{Name: "NewTodo", Notes: "New Notes", ListID: ls.ID, Completed: true}
 	jsonTodo, err := json.Marshal(newTodo)
 	if err != nil {
 		panic(err)
@@ -63,11 +63,12 @@ func TestCreateTodoSuccess(t *testing.T) {
 	assert.Equal(t, "New Notes", td.Notes)
 	assert.Equal(t, ls.ID, td.ListID)
 	assert.NotZero(t, td.ID)
-	assert.Equal(t, false, td.Completed)
+	assert.Equal(t, true, td.Completed)
 	assert.Equal(t, 201, v.Code)
 }
 
 func TestDeleteTodo(t *testing.T) {
+	defer teardown()
 	router := GetRouter()
 
 	// Create a List first
@@ -94,6 +95,7 @@ func TestDeleteTodo(t *testing.T) {
 }
 
 func TestUpdateTodo(t *testing.T) {
+	defer teardown()
 	router := GetRouter()
 
 	// Create a List first
@@ -126,4 +128,40 @@ func TestUpdateTodo(t *testing.T) {
 	assert.Equal(t, ls.ID, td.ListID)
 	assert.NotZero(t, td.ID)
 	assert.Equal(t, true, td.Completed)
+}
+
+func TestGetTodo(t *testing.T) {
+	defer teardown()
+	router := GetRouter()
+
+	// Create a List first
+	w := createlist(router)
+	var ls models.Lists
+	_ = json.Unmarshal(w.Body.Bytes(), &ls)
+
+	// Create  a Todo attached to the list
+	w = createtodo(router, ls)
+	var td models.Todos
+	_ = json.Unmarshal(w.Body.Bytes(), &td)
+
+	// Search with "completed" and "name". These fields can be used individually or together
+	w = httptest.NewRecorder()
+	uri := "/todo?completed=true&name=NewT"
+	req, _ := http.NewRequest("GET", uri, nil)
+	router.ServeHTTP(w, req)
+
+	var data []models.Todos
+	_ = json.Unmarshal(w.Body.Bytes(), &data)
+
+	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, 1, len(data))
+	assert.Equal(t, true, data[0].Completed)
+}
+
+func teardown() {
+	db := models.GetDBMap()
+	_, err := db.Exec(`DELETE FROM TODOS; DELETE FROM LISTS;`)
+	if err != nil {
+		panic(err)
+	}
 }
