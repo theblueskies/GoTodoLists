@@ -13,7 +13,7 @@ build:
 dev:
 	docker-compose build
 	docker-compose up
-	
+
 removePG:
 	docker stop postgres
 	docker rm -f postgres
@@ -25,7 +25,7 @@ runtest:
 	# Sleep 5s so that PostgreSQL DB can come up.
 	sleep 5
 	go clean -testcache
-	ENV=local go test ./handlers
+	ENV=local go test ./handlers ./models
 
 test: pgb runtest
 

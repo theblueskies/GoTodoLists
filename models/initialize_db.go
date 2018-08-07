@@ -29,7 +29,7 @@ func initDb() (*gorp.DbMap, bool) {
 	}
 
 	// connect to db using standard Go database/sql API
-	// use whatever database/sql driver you wish
+	// use Postgresql driver with it.
 	dbinfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		Host, Port, DBUser, DBPassword, DBName)
 
@@ -53,6 +53,9 @@ func initDb() (*gorp.DbMap, bool) {
 	_, err = dbmap.Exec(qCheckTodos)
 
 	if err != nil {
+		// @NOTE: Gorp does not have an API for supporting creation of Foreign Keys, which is
+		// needed in the Todos table.
+		// This is why a raw SQL query is needed for the Todos table.
 		todosQuery := `CREATE TABLE TODOS (
         id BIGSERIAL PRIMARY KEY,
 		list_id integer REFERENCES lists(id),
