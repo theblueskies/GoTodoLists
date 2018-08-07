@@ -11,7 +11,7 @@ import (
 )
 
 // Host signifies DB host
-var Host = "postgres"
+var Host = "localhost"
 
 // Constants for database. These values reflect the ones defined in the docker-compose file.
 const (
@@ -48,16 +48,21 @@ func initDb() (*gorp.DbMap, bool) {
 	err = dbmap.CreateTablesIfNotExists()
 	checkErr(err, "Create tables failed")
 
-	todosQuery := `CREATE TABLE TODOS (
+	// Check if Todos table already exists
+	qCheckTodos := `SELECT 1 FROM todos LIMIT 1;`
+	_, err = dbmap.Exec(qCheckTodos)
+
+	if err != nil {
+		todosQuery := `CREATE TABLE TODOS (
         id BIGSERIAL PRIMARY KEY,
 		list_id integer REFERENCES lists(id),
         name varchar(255) NOT NULL,
 		notes text);
         `
 
-	_, err = dbmap.Exec(todosQuery)
-	checkErr(err, "Todo create table failed")
-
+		_, err = dbmap.Exec(todosQuery)
+		checkErr(err, "Todo create table failed")
+	}
 	return dbmap, true
 }
 

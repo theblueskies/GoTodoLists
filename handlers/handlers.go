@@ -14,6 +14,9 @@ func GetRouter() *gin.Engine {
 
 	r.POST("/list", CreateList)
 	r.POST("/todo", CreateTodo)
+	r.DELETE("/todo/:todoID", DeleteTodo)
+	r.PUT("/todo/:todoID", UpdateTodo)
+	r.GET("/todo", GetTodos)
 	return r
 }
 
@@ -61,10 +64,9 @@ func CreateTodo(c *gin.Context) {
 	err := d.QueryRow(q).Scan(&tdID)
 
 	if err != nil {
-		a := err.Error()
 		c.AbortWithStatusJSON(500, gin.H{
 			"message": "Todo could not be created",
-			"error":   a,
+			"error":   err.Error(),
 		})
 		return
 	}
@@ -75,5 +77,36 @@ func CreateTodo(c *gin.Context) {
 		"name":    td.Name,
 		"notes":   td.Notes,
 		"list_id": td.ListID,
+	})
+}
+
+// DeleteTodo removes a Todo permanently
+func DeleteTodo(c *gin.Context) {
+	todoID := c.Param("todoID")
+	q := fmt.Sprintf(`DELETE FROM todos WHERE id = %s`, todoID)
+	db := models.GetDBMap()
+
+	_, err := db.Exec(q)
+	if err != nil {
+		c.AbortWithStatusJSON(500, gin.H{
+			"message": "Todo could not be deleted",
+			"error":   err.Error(),
+		})
+	}
+
+	c.JSON(204, gin.H{
+		"message": "",
+	})
+}
+
+func UpdateTodo(c *gin.Context) {
+	c.JSON(200, gin.H{
+		"data": nil,
+	})
+}
+
+func GetTodos(c *gin.Context) {
+	c.JSON(200, gin.H{
+		"data": nil,
 	})
 }
