@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -143,7 +144,8 @@ func UpdateTodo(c *gin.Context) {
 			"error":   err.Error(),
 		})
 	}
-
+	intTodoID, _ := strconv.Atoi(todoID)
+	td.ID = int64(intTodoID)
 	responseJSON, err := json.Marshal(td)
 
 	c.Writer.Header().Set("Content-Type", "application/json")
