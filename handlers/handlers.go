@@ -31,7 +31,7 @@ func GetRouter() *gin.Engine {
 func CreateList(c *gin.Context) {
 	var lb models.Lists
 	if err := c.ShouldBindWith(&lb, binding.JSON); err != nil {
-		c.JSON(500, gin.H{
+		c.JSON(400, gin.H{
 			"error":   "Error",
 			"message": err.Error(),
 		})
@@ -57,7 +57,7 @@ func CreateList(c *gin.Context) {
 func CreateTodo(c *gin.Context) {
 	var td models.Todos
 	if err := c.ShouldBindWith(&td, binding.JSON); err != nil {
-		c.JSON(500, gin.H{
+		c.JSON(400, gin.H{
 			"error":   "Error",
 			"message": err.Error(),
 		})
@@ -92,6 +92,12 @@ func CreateTodo(c *gin.Context) {
 // DeleteTodo removes a Todo permanently
 func DeleteTodo(c *gin.Context) {
 	todoID := c.Param("todoID")
+	if todoID == "" {
+		c.AbortWithStatusJSON(400, gin.H{
+			"error":   "Error",
+			"message": "Todo ID required",
+		})
+	}
 	q := fmt.Sprintf(`DELETE FROM todos WHERE id = %s;`, todoID)
 	db := models.GetDBMap()
 
@@ -111,6 +117,12 @@ func DeleteTodo(c *gin.Context) {
 // UpdateTodo updates a Todo
 func UpdateTodo(c *gin.Context) {
 	todoID := c.Param("todoID")
+	if todoID == "" {
+		c.AbortWithStatusJSON(400, gin.H{
+			"error":   "Error",
+			"message": "Todo ID required",
+		})
+	}
 	var td models.Todos
 	if err := c.ShouldBindWith(&td, binding.JSON); err != nil {
 		c.JSON(500, gin.H{
