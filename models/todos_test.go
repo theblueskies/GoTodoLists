@@ -18,9 +18,11 @@ func TestJSONMarshalling(t *testing.T) {
 		Completed: true,
 	}
 
+	// Marshal the struct
 	JSONify, err := json.Marshal(td)
 	assert.Equal(t, nil, err)
 
+	// Unmarshal the JSON and populate Todos{}
 	var regeneratedTodo Todos
 	err = json.Unmarshal(JSONify, &regeneratedTodo)
 	assert.Equal(t, nil, err)
