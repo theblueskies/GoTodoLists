@@ -135,12 +135,12 @@ func TestUpdateTodo(t *testing.T) {
 	err = json.Unmarshal(w.Body.Bytes(), &tdResponse)
 
 	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, td.ID, tdResponse.ID)
+	assert.Equal(t, ls.ID, tdResponse.ListID)
 	assert.Equal(t, "Updated Name", tdResponse.Name)
 	assert.Equal(t, "Updated Notes", tdResponse.Notes)
-	assert.Equal(t, ls.ID, tdResponse.ListID)
-	assert.NotZero(t, tdResponse.ID)
-	assert.Equal(t, true, tdResponse.Completed)
 	assert.Equal(t, td.DueDate, tdResponse.DueDate)
+	assert.Equal(t, true, tdResponse.Completed)
 }
 
 func TestGetTodo(t *testing.T) {
