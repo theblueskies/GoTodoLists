@@ -15,7 +15,7 @@ func GetRouter() *gin.Engine {
 	r.POST("/list", CreateList)
 	r.POST("/todo", CreateTodo)
 	r.DELETE("/todo/:todoID", DeleteTodo)
-	r.PATCH("/complete/:todoID", UpdateTodo)
+	r.PUT("/todo/:todoID", UpdateTodo)
 	r.GET("/todo", GetTodos)
 	return r
 }

@@ -85,6 +85,9 @@ func TestDeleteTodo(t *testing.T) {
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
+	var b map[string]interface{}
+	_ = json.Unmarshal(w.Body.Bytes(), &b)
+
 	assert.Equal(t, 204, w.Code)
-	assert.Equal(t, nil, w.Body)
+	assert.Equal(t, 0, len(b))
 }
