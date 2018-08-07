@@ -10,3 +10,8 @@ build:
 
 pgb:
 	docker run -p 5432:5432 --name postgres postgres:10.3
+
+runtest:
+	ENV=local go test ./handlers
+
+test: pgb runtest

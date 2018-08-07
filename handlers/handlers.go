@@ -45,7 +45,7 @@ func CreateList(c *gin.Context) {
 
 // CreateTodo creates the Todo and attaches it to the related List
 func CreateTodo(c *gin.Context) {
-	var td models.Todo
+	var td models.Todos
 	if err := c.ShouldBindWith(&td, binding.JSON); err != nil {
 		c.JSON(500, gin.H{
 			"error":   "Error",
@@ -55,9 +55,11 @@ func CreateTodo(c *gin.Context) {
 	}
 
 	d := models.GetDBMap()
-	fmt.Println("ZORRO: about to add to db")
-	q := fmt.Sprintf(`INSERT INTO todos (name, description, list_id) VALUES ("%s", "%s", %d);`, td.Name, td.Description, td.ListID)
-	r, err := d.Exec(q)
+	var tdID int
+	q := fmt.Sprintf(`INSERT INTO todos (id, name, notes, list_id)
+					  VALUES (nextval('todos_id_seq'), '%s', '%s', %d) RETURNING id;`, td.Name, td.Notes, td.ListID)
+	err := d.QueryRow(q).Scan(&tdID)
+
 	if err != nil {
 		a := err.Error()
 		c.AbortWithStatusJSON(500, gin.H{
@@ -66,12 +68,12 @@ func CreateTodo(c *gin.Context) {
 		})
 		return
 	}
-	fmt.Println(r)
+
 	c.JSON(201, gin.H{
-		"message":     "Todo Created",
-		"id":          td.ID,
-		"name":        td.Name,
-		"description": td.Description,
-		"list":        td.ListID,
+		"message": "Todo Created",
+		"id":      tdID,
+		"name":    td.Name,
+		"notes":   td.Notes,
+		"list_id": td.ListID,
 	})
 }
