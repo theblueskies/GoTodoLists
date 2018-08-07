@@ -10,7 +10,15 @@ import (
 func GetJSONBody(body io.ReadCloser) map[string]interface{} {
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(body)
+	return GetBufferBody(buf)
+}
+
+// GetBufferBody extracts JSON body from byte stream
+func GetBufferBody(body *bytes.Buffer) map[string]interface{} {
 	var data map[string]interface{}
-	_ = json.Unmarshal(buf.Bytes(), &data)
+	err := json.Unmarshal(body.Bytes(), &data)
+	if err != nil {
+		panic(err)
+	}
 	return data
 }

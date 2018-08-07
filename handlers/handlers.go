@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -60,14 +61,15 @@ func CreateTodo(c *gin.Context) {
 
 	d := models.GetDBMap()
 	var tdID int
-	q := fmt.Sprintf(`INSERT INTO todos (id, name, notes, list_id, completed)
-					  VALUES (nextval('todos_id_seq'), '%s', '%s', %d, %t) RETURNING id;`, td.Name, td.Notes, td.ListID, td.Completed)
+	q := fmt.Sprintf(`INSERT INTO todos (id, name, notes, list_id, completed, due_date)
+					  VALUES (nextval('todos_id_seq'), '%s', '%s', %d, %t, '%s') RETURNING id;`, td.Name, td.Notes, td.ListID, td.Completed, td.DueDate.Format(time.RFC3339))
 	err := d.QueryRow(q).Scan(&tdID)
 
 	if err != nil {
+		a := err.Error()
 		c.AbortWithStatusJSON(500, gin.H{
 			"message": "Todo could not be created",
-			"error":   err.Error(),
+			"error":   a,
 		})
 		return
 	}
@@ -79,6 +81,7 @@ func CreateTodo(c *gin.Context) {
 		"notes":     td.Notes,
 		"list_id":   td.ListID,
 		"completed": td.Completed,
+		"due_date":  td.DueDate,
 	})
 }
 
@@ -114,8 +117,8 @@ func UpdateTodo(c *gin.Context) {
 	}
 
 	db := models.GetDBMap()
-	q := fmt.Sprintf(`UPDATE todos SET list_id=%d, name='%s', notes='%s', completed=%v
-					  WHERE id=%s;`, td.ListID, td.Name, td.Notes, td.Completed, todoID)
+	q := fmt.Sprintf(`UPDATE todos SET list_id=%d, name='%s', notes='%s', completed=%v, due_date='%s'
+					  WHERE id=%s;`, td.ListID, td.Name, td.Notes, td.Completed, td.DueDate.Format(time.RFC3339), todoID)
 
 	_, err := db.Exec(q)
 	if err != nil {
@@ -125,14 +128,11 @@ func UpdateTodo(c *gin.Context) {
 		})
 	}
 
-	c.JSON(200, gin.H{
-		"message":   "Todo Updated",
-		"id":        todoID,
-		"name":      td.Name,
-		"notes":     td.Notes,
-		"list_id":   td.ListID,
-		"completed": td.Completed,
-	})
+	responseJSON, err := json.Marshal(td)
+
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.WriteHeader(200)
+	c.Writer.Write(responseJSON)
 }
 
 // GetTodos gets Todos based on the query params: completed and/or name
