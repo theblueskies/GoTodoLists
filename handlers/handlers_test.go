@@ -63,6 +63,7 @@ func TestCreateTodoSuccess(t *testing.T) {
 	assert.Equal(t, "New Notes", td.Notes)
 	assert.Equal(t, ls.ID, td.ListID)
 	assert.NotZero(t, td.ID)
+	assert.Equal(t, false, td.Completed)
 	assert.Equal(t, 201, v.Code)
 }
 
@@ -90,4 +91,39 @@ func TestDeleteTodo(t *testing.T) {
 
 	assert.Equal(t, 204, w.Code)
 	assert.Equal(t, 0, len(b))
+}
+
+func TestUpdateTodo(t *testing.T) {
+	router := GetRouter()
+
+	// Create a List first
+	w := createlist(router)
+	var ls models.Lists
+	_ = json.Unmarshal(w.Body.Bytes(), &ls)
+
+	// Create  a Todo attached to the list
+	w = createtodo(router, ls)
+	var td models.Todos
+	_ = json.Unmarshal(w.Body.Bytes(), &td)
+
+	// Update Todo
+	td.Name = "Updated Name"
+	td.Completed = true
+	td.Notes = "Updated Notes"
+	jsonTodo, err := json.Marshal(td)
+	if err != nil {
+		panic(err)
+	}
+
+	w = httptest.NewRecorder()
+	uri := fmt.Sprintf("/todo/%d", td.ID)
+	req, _ := http.NewRequest("PUT", uri, bytes.NewBuffer(jsonTodo))
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, "Updated Name", td.Name)
+	assert.Equal(t, "Updated Notes", td.Notes)
+	assert.Equal(t, ls.ID, td.ListID)
+	assert.NotZero(t, td.ID)
+	assert.Equal(t, true, td.Completed)
 }
