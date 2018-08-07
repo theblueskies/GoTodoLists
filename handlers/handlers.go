@@ -59,8 +59,8 @@ func CreateTodo(c *gin.Context) {
 
 	d := models.GetDBMap()
 	var tdID int
-	q := fmt.Sprintf(`INSERT INTO todos (id, name, notes, list_id)
-					  VALUES (nextval('todos_id_seq'), '%s', '%s', %d) RETURNING id;`, td.Name, td.Notes, td.ListID)
+	q := fmt.Sprintf(`INSERT INTO todos (id, name, notes, list_id, completed)
+					  VALUES (nextval('todos_id_seq'), '%s', '%s', %d, %t) RETURNING id;`, td.Name, td.Notes, td.ListID, td.Completed)
 	err := d.QueryRow(q).Scan(&tdID)
 
 	if err != nil {
@@ -72,11 +72,12 @@ func CreateTodo(c *gin.Context) {
 	}
 
 	c.JSON(201, gin.H{
-		"message": "Todo Created",
-		"id":      tdID,
-		"name":    td.Name,
-		"notes":   td.Notes,
-		"list_id": td.ListID,
+		"message":   "Todo Created",
+		"id":        tdID,
+		"name":      td.Name,
+		"notes":     td.Notes,
+		"list_id":   td.ListID,
+		"completed": td.Completed,
 	})
 }
 
@@ -99,9 +100,38 @@ func DeleteTodo(c *gin.Context) {
 	})
 }
 
+// UpdateTodo updates a Todo
 func UpdateTodo(c *gin.Context) {
+	todoID := c.Param("todoID")
+	var td models.Todos
+	if err := c.ShouldBindWith(&td, binding.JSON); err != nil {
+		c.JSON(500, gin.H{
+			"error":   "Error",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	db := models.GetDBMap()
+	q := fmt.Sprintf(`UPDATE todos SET list_id=%d, name='%s', notes='%s', completed=%v
+					  WHERE id=%s`, td.ListID, td.Name, td.Notes, td.Completed, todoID)
+
+	_, err := db.Exec(q)
+	if err != nil {
+		a := err.Error()
+		c.AbortWithStatusJSON(500, gin.H{
+			"message": "Todo could not be updated",
+			"error":   a,
+		})
+	}
+
 	c.JSON(200, gin.H{
-		"data": nil,
+		"message":   "Todo Updated",
+		"id":        todoID,
+		"name":      td.Name,
+		"notes":     td.Notes,
+		"list_id":   td.ListID,
+		"completed": td.Completed,
 	})
 }
 

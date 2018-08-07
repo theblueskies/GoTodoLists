@@ -12,4 +12,6 @@ type Todos struct {
 	ListID int64  `db:"list_id" json:"list_id" binding:"required"`
 	Name   string `db:"name" json:"name" binding:"required"`
 	Notes  string `db:"notes" json:"notes" binding:"required"`
+	// DueDate   time.Time `db:"due_date" json:"due_date"`
+	Completed bool `db:"completed" json:"completed"`
 }

@@ -57,7 +57,8 @@ func initDb() (*gorp.DbMap, bool) {
         id BIGSERIAL PRIMARY KEY,
 		list_id integer REFERENCES lists(id),
         name varchar(255) NOT NULL,
-		notes text);
+		notes text,
+		completed boolean);
         `
 
 		_, err = dbmap.Exec(todosQuery)
