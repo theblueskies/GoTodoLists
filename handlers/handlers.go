@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
@@ -84,7 +85,7 @@ func CreateTodo(c *gin.Context) {
 // DeleteTodo removes a Todo permanently
 func DeleteTodo(c *gin.Context) {
 	todoID := c.Param("todoID")
-	q := fmt.Sprintf(`DELETE FROM todos WHERE id = %s`, todoID)
+	q := fmt.Sprintf(`DELETE FROM todos WHERE id = %s;`, todoID)
 	db := models.GetDBMap()
 
 	_, err := db.Exec(q)
@@ -114,14 +115,13 @@ func UpdateTodo(c *gin.Context) {
 
 	db := models.GetDBMap()
 	q := fmt.Sprintf(`UPDATE todos SET list_id=%d, name='%s', notes='%s', completed=%v
-					  WHERE id=%s`, td.ListID, td.Name, td.Notes, td.Completed, todoID)
+					  WHERE id=%s;`, td.ListID, td.Name, td.Notes, td.Completed, todoID)
 
 	_, err := db.Exec(q)
 	if err != nil {
-		a := err.Error()
 		c.AbortWithStatusJSON(500, gin.H{
 			"message": "Todo could not be updated",
-			"error":   a,
+			"error":   err.Error(),
 		})
 	}
 
@@ -135,8 +135,30 @@ func UpdateTodo(c *gin.Context) {
 	})
 }
 
+// GetTodos gets Todos based on the query params: completed and/or name
 func GetTodos(c *gin.Context) {
-	c.JSON(200, gin.H{
-		"data": nil,
-	})
+	var td []models.Todos
+	completed := c.DefaultQuery("completed", "true")
+	tdName := c.Query("name")
+
+	q := fmt.Sprintf(`SELECT * FROM todos WHERE completed=%s`, completed)
+	if tdName != "" {
+		q += fmt.Sprintf(` AND name ILIKE '%s%%'`, tdName)
+	}
+	q += ";"
+
+	db := models.GetDBMap()
+	_, err := db.Select(&td, q)
+	if err != nil {
+		c.AbortWithStatusJSON(500, gin.H{
+			"message": "Todo could not be fetched",
+			"error":   err.Error(),
+		})
+	}
+
+	responseJSON, err := json.Marshal(td)
+
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.WriteHeader(200)
+	c.Writer.Write(responseJSON)
 }

@@ -11,7 +11,7 @@ import (
 )
 
 // Host signifies DB host
-var Host = "localhost"
+var Host = "postgres"
 
 // Constants for database. These values reflect the ones defined in the docker-compose file.
 const (
