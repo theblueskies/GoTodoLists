@@ -10,6 +10,10 @@ build:
 	CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o todo-service .
 	docker build --no-cache -t todo-service .
 
+dev:
+	docker-compose build
+	docker-compose up
+	
 removePG:
 	docker stop postgres
 	docker rm -f postgres
