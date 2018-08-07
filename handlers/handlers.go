@@ -14,6 +14,11 @@ import (
 func GetRouter() *gin.Engine {
 	r := gin.Default()
 
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status": "ok",
+		})
+	})
 	r.POST("/list", CreateList)
 	r.POST("/todo", CreateTodo)
 	r.DELETE("/todo/:todoID", DeleteTodo)
@@ -66,10 +71,9 @@ func CreateTodo(c *gin.Context) {
 	err := d.QueryRow(q).Scan(&tdID)
 
 	if err != nil {
-		a := err.Error()
 		c.AbortWithStatusJSON(500, gin.H{
 			"message": "Todo could not be created",
-			"error":   a,
+			"error":   err.Error(),
 		})
 		return
 	}

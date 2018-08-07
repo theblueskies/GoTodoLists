@@ -14,7 +14,7 @@ import (
 	"github.com/theblueskies/GoTodoLists/models"
 )
 
-func createlist(router *gin.Engine) *httptest.ResponseRecorder {
+func createList(router *gin.Engine) *httptest.ResponseRecorder {
 	newList := models.Lists{Name: "New List"}
 	jsonList, _ := json.Marshal(newList)
 	w := httptest.NewRecorder()
@@ -23,8 +23,8 @@ func createlist(router *gin.Engine) *httptest.ResponseRecorder {
 	return w
 }
 
-func createtodo(router *gin.Engine) (models.Lists, models.Todos, int) {
-	w := createlist(router)
+func createTodo(router *gin.Engine) (models.Lists, models.Todos, int) {
+	w := createList(router)
 	var ls models.Lists
 	_ = json.Unmarshal(w.Body.Bytes(), &ls)
 
@@ -48,11 +48,26 @@ func createtodo(router *gin.Engine) (models.Lists, models.Todos, int) {
 	return ls, td, w.Code
 }
 
+func TestHealth(t *testing.T) {
+	router := GetRouter()
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/health", nil)
+	router.ServeHTTP(w, req)
+
+	var b map[string]string
+	_ = json.Unmarshal(w.Body.Bytes(), &b)
+
+	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, "ok", b["status"])
+
+}
+
 func TestCreateListSuccess(t *testing.T) {
 	router := GetRouter()
 
 	// Create a List
-	w := createlist(router)
+	w := createList(router)
 	var nl models.Lists
 	_ = json.Unmarshal(w.Body.Bytes(), &nl)
 
@@ -64,7 +79,7 @@ func TestCreateTodoSuccess(t *testing.T) {
 	router := GetRouter()
 
 	// Create  a Todo attached to the list
-	ls, td, code := createtodo(router)
+	ls, td, code := createTodo(router)
 
 	assert.Equal(t, "NewTodo", td.Name)
 	assert.Equal(t, "New Notes", td.Notes)
@@ -79,7 +94,7 @@ func TestDeleteTodo(t *testing.T) {
 	router := GetRouter()
 
 	// Create  a List and a Todo attached to it
-	_, td, _ := createtodo(router)
+	_, td, _ := createTodo(router)
 
 	// Delete todo
 	uri := fmt.Sprintf("/todo/%d", td.ID)
@@ -99,7 +114,7 @@ func TestUpdateTodo(t *testing.T) {
 	router := GetRouter()
 
 	// Create  a List and a Todo attached to it
-	ls, td, _ := createtodo(router)
+	ls, td, _ := createTodo(router)
 
 	// Update Todo
 	td.Name = "Updated Name"
@@ -133,7 +148,7 @@ func TestGetTodo(t *testing.T) {
 	router := GetRouter()
 
 	// Create  a List and a Todo attached to it
-	_, _, _ = createtodo(router)
+	_, _, _ = createTodo(router)
 
 	// Search with "completed" and "name". These fields can be used individually or together
 	w := httptest.NewRecorder()
