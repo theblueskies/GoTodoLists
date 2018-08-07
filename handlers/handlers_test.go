@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -22,16 +23,29 @@ func createlist(router *gin.Engine) *httptest.ResponseRecorder {
 	return w
 }
 
-func createtodo(router *gin.Engine, ls models.Lists) *httptest.ResponseRecorder {
-	v := httptest.NewRecorder()
-	newTodo := models.Todos{Name: "NewTodo", Notes: "New Notes", ListID: ls.ID, Completed: true}
+func createtodo(router *gin.Engine) (models.Lists, models.Todos, int) {
+	w := createlist(router)
+	var ls models.Lists
+	_ = json.Unmarshal(w.Body.Bytes(), &ls)
+
+	w = httptest.NewRecorder()
+	newTodo := models.Todos{
+		Name:      "NewTodo",
+		Notes:     "New Notes",
+		ListID:    ls.ID,
+		Completed: true,
+		DueDate:   time.Now(),
+	}
 	jsonTodo, err := json.Marshal(newTodo)
 	if err != nil {
 		panic(err)
 	}
 	req, _ := http.NewRequest("POST", "/todo", bytes.NewBuffer(jsonTodo))
-	router.ServeHTTP(v, req)
-	return v
+	router.ServeHTTP(w, req)
+	var td models.Todos
+	_ = json.Unmarshal(w.Body.Bytes(), &td)
+
+	return ls, td, w.Code
 }
 
 func TestCreateListSuccess(t *testing.T) {
@@ -49,42 +63,28 @@ func TestCreateListSuccess(t *testing.T) {
 func TestCreateTodoSuccess(t *testing.T) {
 	router := GetRouter()
 
-	// Create a List first
-	w := createlist(router)
-	var ls models.Lists
-	_ = json.Unmarshal(w.Body.Bytes(), &ls)
-
 	// Create  a Todo attached to the list
-	v := createtodo(router, ls)
-	var td models.Todos
-	_ = json.Unmarshal(v.Body.Bytes(), &td)
+	ls, td, code := createtodo(router)
 
 	assert.Equal(t, "NewTodo", td.Name)
 	assert.Equal(t, "New Notes", td.Notes)
 	assert.Equal(t, ls.ID, td.ListID)
 	assert.NotZero(t, td.ID)
 	assert.Equal(t, true, td.Completed)
-	assert.Equal(t, 201, v.Code)
+	assert.Equal(t, 201, code)
 }
 
 func TestDeleteTodo(t *testing.T) {
 	defer teardown()
 	router := GetRouter()
 
-	// Create a List first
-	w := createlist(router)
-	var ls models.Lists
-	_ = json.Unmarshal(w.Body.Bytes(), &ls)
-
-	// Create  a Todo attached to the list
-	w = createtodo(router, ls)
-	var td models.Todos
-	_ = json.Unmarshal(w.Body.Bytes(), &td)
+	// Create  a List and a Todo attached to it
+	_, td, _ := createtodo(router)
 
 	// Delete todo
 	uri := fmt.Sprintf("/todo/%d", td.ID)
 	req, _ := http.NewRequest("DELETE", uri, nil)
-	w = httptest.NewRecorder()
+	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
 	var b map[string]interface{}
@@ -98,54 +98,45 @@ func TestUpdateTodo(t *testing.T) {
 	defer teardown()
 	router := GetRouter()
 
-	// Create a List first
-	w := createlist(router)
-	var ls models.Lists
-	_ = json.Unmarshal(w.Body.Bytes(), &ls)
-
-	// Create  a Todo attached to the list
-	w = createtodo(router, ls)
-	var td models.Todos
-	_ = json.Unmarshal(w.Body.Bytes(), &td)
+	// Create  a List and a Todo attached to it
+	ls, td, _ := createtodo(router)
 
 	// Update Todo
 	td.Name = "Updated Name"
 	td.Completed = true
 	td.Notes = "Updated Notes"
+	td.DueDate = time.Date(2049, 1, 1, 0, 0, 0, 0, time.UTC)
 	jsonTodo, err := json.Marshal(td)
 	if err != nil {
 		panic(err)
 	}
 
-	w = httptest.NewRecorder()
+	w := httptest.NewRecorder()
 	uri := fmt.Sprintf("/todo/%d", td.ID)
 	req, _ := http.NewRequest("PUT", uri, bytes.NewBuffer(jsonTodo))
 	router.ServeHTTP(w, req)
 
+	var tdResponse models.Todos
+	err = json.Unmarshal(w.Body.Bytes(), &tdResponse)
+
 	assert.Equal(t, 200, w.Code)
-	assert.Equal(t, "Updated Name", td.Name)
-	assert.Equal(t, "Updated Notes", td.Notes)
-	assert.Equal(t, ls.ID, td.ListID)
-	assert.NotZero(t, td.ID)
-	assert.Equal(t, true, td.Completed)
+	assert.Equal(t, "Updated Name", tdResponse.Name)
+	assert.Equal(t, "Updated Notes", tdResponse.Notes)
+	assert.Equal(t, ls.ID, tdResponse.ListID)
+	assert.NotZero(t, tdResponse.ID)
+	assert.Equal(t, true, tdResponse.Completed)
+	assert.Equal(t, td.DueDate, tdResponse.DueDate)
 }
 
 func TestGetTodo(t *testing.T) {
 	defer teardown()
 	router := GetRouter()
 
-	// Create a List first
-	w := createlist(router)
-	var ls models.Lists
-	_ = json.Unmarshal(w.Body.Bytes(), &ls)
-
-	// Create  a Todo attached to the list
-	w = createtodo(router, ls)
-	var td models.Todos
-	_ = json.Unmarshal(w.Body.Bytes(), &td)
+	// Create  a List and a Todo attached to it
+	_, _, _ = createtodo(router)
 
 	// Search with "completed" and "name". These fields can be used individually or together
-	w = httptest.NewRecorder()
+	w := httptest.NewRecorder()
 	uri := "/todo?completed=true&name=NewT"
 	req, _ := http.NewRequest("GET", uri, nil)
 	router.ServeHTTP(w, req)

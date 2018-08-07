@@ -11,7 +11,7 @@ import (
 )
 
 // Host signifies DB host
-var Host = "postgres"
+var Host = "localhost"
 
 // Constants for database. These values reflect the ones defined in the docker-compose file.
 const (
@@ -58,7 +58,8 @@ func initDb() (*gorp.DbMap, bool) {
 		list_id integer REFERENCES lists(id),
         name varchar(255) NOT NULL,
 		notes text,
-		completed boolean);
+		completed boolean,
+		due_date date);
         `
 
 		_, err = dbmap.Exec(todosQuery)

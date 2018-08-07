@@ -5,9 +5,20 @@ Todos have certain attributes. Lists contain a bunch of Todos
 ## App description
 1. Create lists (POST /lists)
 2. Create Todo (POST /todo)
-3. Delete Todo (DELETE /todo/<todoID>)
-4. Update Todo (PUT /todo/<todoID>)
+3. Delete Todo (DELETE /todo/:todoID)
+4. Update Todo (PUT /todo/:todoID)
 5. Get Todo (GET /todo)
+
+Example Todo Create Payload:  
+{  
+	"name": "New Todo",  
+	"notes": "Description about Todo",  
+	"list_id": 1,  
+	"completed": true,  
+	"due_date": "2018-09-07T00:00:00Z"  
+}  
+
+Note: The format for due_date field should be in RFC3339 format.
 
 Update Todo includes:  
 * Setting whether it's completed or not  
